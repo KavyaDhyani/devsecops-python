@@ -177,6 +177,17 @@ jobs:
             -n taskboard \
             --timeout=120s
 
+      - name: Diagnose backend pod failure
+        if: failure()
+        run: |
+          kubectl get pods -n taskboard -l app=taskboard-backend -o wide
+          kubectl describe pods -n taskboard -l app=taskboard-backend
+          kubectl logs -n taskboard -l app=taskboard-backend \
+            --all-containers=true --prefix=true --tail=100 || true
+          kubectl logs -n taskboard -l app=taskboard-backend \
+            --all-containers=true --prefix=true --previous --tail=100 || true
+          kubectl get events -n taskboard --sort-by=.lastTimestamp
+
       - name: Test backend API in CI (Curl)
         run: |
           kubectl port-forward service/taskboard-backend 8001:80 -n taskboard &
